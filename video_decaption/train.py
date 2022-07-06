@@ -13,7 +13,7 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 def eval_net(net,mask_net,writer,T,epoch):
     """Evaluation without the densecrf with the dice coefficient"""
@@ -49,7 +49,6 @@ def crit_ssim(pred,true):
     true=true*0.5+0.5
     return (1-ssim(pred,true))/2
 
-#训练前参数的设定
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--t_root',type=str, default='train/img',
@@ -60,7 +59,7 @@ def get_args():
                         help='Model and Optim saved root')
     parser.add_argument('--mask_model',type=str, default='mask_extraction/checkpoint/MaskExtractor.pth',
                         help='Mask extraction')
-    parser.add_argument('--model_path',type=str, default='video_decaptioning/checkpoint/netG.pth',
+    parser.add_argument('--model_path',type=str, default='video_decaptioning/checkpoint/netG_origin.pth',
                         help='Model saved path')
     parser.add_argument('--n_frames', type=int, default=5,
                         help='N_frames in each video')
@@ -68,7 +67,7 @@ def get_args():
                         help='T frames in each batch')                                
     parser.add_argument('--epochs',type=int, default=200,
                         help='Number of epochs', dest='epochs')
-    parser.add_argument('--batch_size', type=int,default=64,
+    parser.add_argument('--batch_size', type=int,default=32,
                         help='Batch size')
     parser.add_argument('--lr',type=float,default=0.0001,
                         help='Learning rate')
@@ -83,18 +82,18 @@ if __name__ == '__main__':
     print(net_G)
     if args.load:
         logging.info(f'Model loaded from {args.model_path}')
-        net_G.load_state_dict(torch.load(args.model_path))
+        # 처음부터 학습
+        # net_G.load_state_dict(torch.load(args.model_path))
     net_G=net_G.cuda()
-    net_G = torch.nn.DataParallel(net_G, device_ids=[0,1])
+    net_G = torch.nn.DataParallel(net_G, device_ids=[0])
     T=args.T
     n_frames=args.n_frames
     
-    #加载mask生成模型
     mask_net=MaskUNet(3,1)
     logging.info(f'Load mask extractor model from {args.mask_model}')
     mask_net.load_state_dict(torch.load(args.mask_model))
     mask_net=mask_net.cuda()
-    mask_net=torch.nn.DataParallel(mask_net,device_ids=[0,1])
+    mask_net=torch.nn.DataParallel(mask_net,device_ids=[0])
     mask_net.eval() 
     try:
         train_data = VideoDecaptionData(args.t_root, n_frames)

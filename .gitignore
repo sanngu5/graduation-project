@@ -1,3 +1,13 @@
+# Weights
+mask_extraction/checkpoint/*
+video_decaption/checkpoint/*
+
+# Test_results
+video_decaption/test_results/*
+
+# Tensorboard_data
+video_decpation/runs/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

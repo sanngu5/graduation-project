@@ -13,8 +13,8 @@ from tqdm import tqdm
 video_path='../../../dataset/test/imgs/X'
 n_frames=125
 mask_model_path='../mask_extraction/checkpoint/MaskExtractor.pth'
-model_G_path='../video_decaption/checkpoint/net_G.pth'
-T=11
+model_G_path='../video_decaption/checkpoint/netG_origin.pth'
+T=7
 s=3
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -56,12 +56,35 @@ if __name__ == '__main__':
             frames_padding=videopadding(frames,s,T).cuda()  
             masks_padding=videopadding(masks,s,T).cuda()   
             pred_imgs=[]
+            
+            forward_pred_imgs = []
+            backward_pred_imgs = []
 
             for j in range(125):
                 input_imgs=frames_padding[:,j:j+(T-1)*s+1:s]
                 input_masks=masks_padding[:,j:j+(T-1)*s+1:s]
                 pred_img= net_G(input_imgs,input_masks)
                 
+                # 타겟프레임을 예측결과로 대치
+                frames_padding[:,(j+((T-1)*s)//2)] = pred_img
+                # 예측결과 저장
+                forward_pred_imgs.append(pred_img)
+            
+            for j in range(125, 0, -1):
+                input_imgs=frames_padding[:,j:j+(T-1)*s+1:s]
+                input_masks=masks_padding[:,j:j+(T-1)*s+1:s]
+                pred_img= net_G(input_imgs,input_masks)
+                
+                # 타겟프레임을 예측결과로 대치
+                frames_padding[:, j+((T-1)*s)//2] = pred_img
+                # 예측결과 저장
+                backward_pred_imgs.append(pred_img)
+
+            for j in range(125):
+                pred_img = torch.add(forward_pred_imgs[j], backward_pred_imgs[j])
+                pred_img = torch.div(pred_img, 2)
+                pred_img = forward_pred_imgs[j]
+
                 # 경로 생성, 이미지 스케일링, 저장
                 test_imgs_path = './test_results/{:d}'.format(h)
                 createDirectory(os.path.join(test_imgs_path, 'output'))
