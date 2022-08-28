@@ -1,0 +1,5 @@
+server/X0/*
+server/video/*
+server/MaskExtractor.pth
+server/netG_origin.pth
+server/__pycache__
