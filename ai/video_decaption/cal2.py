@@ -112,10 +112,11 @@ if __name__ == '__main__':
 		total_psnr += psnr
 		total_ssim += ssim_score
 
-		gc.collect()
-		del result, compare	
+		gc.collect()		# 네임스페이스에서 변수 제거
+		del result, compare	# 메모리에서 제거
 
+	step_num = chunk_size / total_num_video
 	print('======================================')
-	print('Total MSE  : {:.4f}'.format(total_mse))
-	print('Total PSNR : {:.4f}'.format(total_psnr))
-	print('Tatal SSIM : {:.4f}'.format(total_ssim))
+	print('Total MSE  : {:.4f}'.format(total_mse / step_num))
+	print('Total PSNR : {:.4f}'.format(total_psnr / step_num))
+	print('Tatal SSIM : {:.4f}'.format(total_ssim / step_num))
