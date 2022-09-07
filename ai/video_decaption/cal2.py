@@ -115,7 +115,7 @@ if __name__ == '__main__':
 		gc.collect()		# 네임스페이스에서 변수 제거
 		del result, compare	# 메모리에서 제거
 
-	step_num = chunk_size / total_num_video
+	step_num = total_num_video / chunk_size
 	print('======================================')
 	print('Total MSE  : {:.4f}'.format(total_mse / step_num))
 	print('Total PSNR : {:.4f}'.format(total_psnr / step_num))
