@@ -1,4 +1,3 @@
-
 import io
 import zlib
 import torch
@@ -12,6 +11,7 @@ import numpy as np
 import torch.nn.functional as F
 from dataset import *
 from network import MaskUNet, generator
+
 import time
 
 # CORS 작업
@@ -57,39 +57,28 @@ CORS(
 # - 성공여부 전송
 @app.route('/upload', methods=['POST'])
 def upload():
+    global fn
     video = request.files['send']
     print('POST데이터: ', video.content_type)
     video.save('./video/{0}'.format(video.filename))
-
-    # time.sleep(5000)
-
-    return Response(response=video.filename, status=200, mimetype='text/plain')
-
-# 디캡션 비디오 전송
-@app.route('/download', methods=['GET'])
-def download():
-    # videoname = request.data
-    # return send_file('./video/{0}'.format(video.filename), mimetype='video/mp4')
-    return send_file('./video/X0.mp4', mimetype='video/mp4')
-
-###################################
-
-# route http posts to this method
-@app.route('/inference',methods=['POST'])
-def inference():
-    """
-    Expects a compressed, binary np array. Decompresses it, multiplies it by 10
-    and returns it compressed.
-    """
-    r = request
-    #
-    data = uncompress_nparr(r.data)
+    vidcap = cv2.VideoCapture('./video/{0}'.format(video.filename))
+    count = 1
+    while True:
+        success,image = vidcap.read()
+        if not success:
+            break
+        print('Read a new frame: ',success)
+        fname="{}.png".format("{:03d}".format(count))
+        cv2.imwrite('./output/temp/'+fname,image)
+        count+=1
+    print("{} images are extracted in {}.".format(count,'./output/temp/'))
+        
     #
     start = time.time()
-    video_path='./X0'
+    video_path='./output/temp'
     n_frames=125
     mask_model_path='./MaskExtractor.pth'
-    model_G_path='./netG_origin.pth'
+    model_G_path='./netG.pth'
     T=7
     s=3
     device = torch.device('cpu')
@@ -118,23 +107,36 @@ def inference():
         frames_padding=videopadding(frames,s,T) 
         masks_padding=videopadding(masks,s,T)  
         pred_imgs=[]
-        for j in range(2):
+        for j in range(125):
             input_imgs=frames_padding[:,j:j+(T-1)*s+1:s]
             input_masks=masks_padding[:,j:j+(T-1)*s+1:s]
             pred_img= net_G(input_imgs,input_masks)
             pred=transforms.ToPILImage()(pred_img.squeeze(0)*0.5+0.5).convert('RGB')
             #pred.save('video_decaptioning/test_imgs1/%03d.png'%(j))
             pred_imgs.append(pred_img*0.5+0.5)
-            break
-        video=torch.cat(pred_imgs,dim=0)
-        #video=(video.cpu().numpy()*255).astype(np.uint8).transpose(0,2,3,1)
+            
+        vid=torch.cat(pred_imgs,dim=0)
+        vid=(vid.cpu().numpy()*255).astype(np.uint8).transpose(0,2,3,1)
     pred_img = pred_imgs[0].numpy()
+    imageio.mimwrite('./output/video.mp4',vid,fps=25,quality=8,macro_block_size=1)
+#     def generate():
+#         with open("./files/video.mp4", "rb") as f:
+#             while True:
+#                 chunk = ... # read each chunk or break if EOF
+
     print("time :", time.time() - start)
-    
-   
-    resp, _, _ = compress_nparr(video)
-    return Response(response=resp, status=200,
-                    mimetype="application/octet_stream")
+    # time.sleep(5000)
+
+    return Response(response=video.filename, status=200, mimetype='text/plain')
+
+# 디캡션 비디오 전송
+@app.route('/download', methods=['GET'])
+def download():
+    # videoname = request.data
+    # return send_file('./video/{0}'.format(video.filename), mimetype='video/mp4')
+    return send_file('./output/video.mp4', mimetype='video/mp4')
+
+###################################
 
 
 # start flask app
