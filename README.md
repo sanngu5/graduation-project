@@ -15,3 +15,7 @@ https://docs.google.com/document/d/14tE19qj9MCoHoC1SMsLbqWDbHi_3VDtoxljbQDJ3xuM/
 https://docs.google.com/document/d/1qcoYHLGHmuc_UCf8TaPu4rp1sqGg9izVu9atNjeriUI/edit
 ### 프로토타입
 https://youtu.be/JF13KG4Gyi8
+
+## 2학기 결과물
+### 프로젝트 계획서
+https://docs.google.com/document/d/1XqbMK0HLqYQmdtBulQpx_NzV8x7iWnpL30ctv8E6VQ0/edit
