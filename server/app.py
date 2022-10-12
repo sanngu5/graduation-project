@@ -21,7 +21,7 @@ from flask_cors import CORS
 
 
 # ## HELPERS
-
+###
 def compress_nparr(nparr):
     """
     Returns the given numpy array as compressed bytestring,
