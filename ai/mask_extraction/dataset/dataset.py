@@ -46,7 +46,7 @@ def video_loader(path,target_path,frame_indices,training):
 
 def make_dataset(root_path,n_frames,training):
     if training:
-        step = 1
+        step = 3
         if (125//n_frames)<step:
             step=1
         length=(n_frames-1)*step
@@ -55,18 +55,16 @@ def make_dataset(root_path,n_frames,training):
         for j in range(n_frames):
             idxs.append(start)
             start+=step
-        N=70000
     else:
         idxs=list(range(0,125))
-        N=5000
+    videos=os.listdir(os.path.join(root_path,'X'))
     video_input_path = os.path.join(root_path, 'X')
     dataset = []
     video_target_path = os.path.join(root_path, 'Y')
-    for n in range(N):
-        video_name='{:03d}'.format(n)
-        input_path = os.path.join(video_input_path, video_name)
-        target_path = os.path.join(video_target_path, video_name)
-        sample = { 'video': input_path, 'n_frames': 125,'video_id': video_name,'target_video': target_path}
+    for video in videos:
+        input_path = os.path.join(video_input_path, video)
+        target_path = os.path.join(video_target_path, video.replace('X','Y'))
+        sample = { 'video': input_path, 'n_frames': 125,'video_id': video,'target_video': target_path}
         sample['frame_indices'] = idxs
         dataset.append(sample)
     return dataset
@@ -78,13 +76,28 @@ class VideoDecaptionData(data.Dataset):
         self.training=training
 
     def __getitem__(self, index):
-        path = self.data[index]['video']
+        path = self.data[index]['video'] 
         target_path = self.data[index]['target_video']
         frame_indices = self.data[index]['frame_indices']
         clip,target_clip = video_loader(path,target_path, frame_indices,self.training)
         mask=torch.abs(clip-target_clip)
         mask_clip = blur(mask,(5,5),0.05)
+        #print(mask_clip.shape)  #
         return clip,mask_clip
 
     def __len__(self):
         return len(self.data)
+
+def videopadding(imgClip,stride,n_frames):
+    b,t,c,h,w=imgClip.size()
+    nums=(n_frames//2)*stride
+    idxs=list(range(nums-1,-1,-1))
+    imgClip_f=imgClip[:,:nums]
+    imgClip_f=imgClip_f[:,idxs]
+    out=torch.cat([imgClip_f,imgClip],dim=1)
+
+    imgClip_b=imgClip[:,-nums:]
+    imgClip_b=imgClip_b[:,idxs]
+    out=torch.cat([out,imgClip_b],dim=1)
+    return out
+        
