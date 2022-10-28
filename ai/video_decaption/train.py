@@ -8,6 +8,9 @@ from torch import optim
 from dataset.dataset import *
 from utils.cal_ssim import ssim
 from model.network import MaskUNet,generator
+from model.deeplabV3 import DeepLab
+
+
 from torchvision import models
 from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
@@ -26,11 +29,12 @@ def eval_net(net,mask_net,writer,T,epoch):
         with torch.no_grad():
             masks=mask_net(inputs.cuda())
             masks = (masks > 0.5).float().cuda()
+            s=3 # s 선언위치 이동
             input_padding=videopadding(inputs,s,T).cuda()  
             masks_padding=videopadding(masks,s,T).cuda()  
             pred_imgs=[]
             criterion = nn.MSELoss()
-            s=3
+            # s=3
             for j in range(125):
                 input_imgs=input_padding[:,j:j+(T-1)*s+1:s]
                 input_masks=masks_padding[:,j:j+(T-1)*s+1:s]
@@ -41,6 +45,7 @@ def eval_net(net,mask_net,writer,T,epoch):
             mse+=criterion(pred_imgs,t_imgs.cuda())
         if step==299:
             writer.add_scalar('Valid_MSE', mse.item(), epoch+1)
+            print(mse.item())
             break
     return mse.item()
 
@@ -51,15 +56,15 @@ def crit_ssim(pred,true):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--t_root',type=str, default='train/img',
+    parser.add_argument('--t_root',type=str, default='../../../dataset/train/imgs',
                         help='Trainset root')
-    parser.add_argument('--v_root',type=str, default='dev/img',
+    parser.add_argument('--v_root',type=str, default='../../../dataset/dev/imgs',
                         help='Validationset root')     
-    parser.add_argument('--m_root',type=str, default='video_decaptioning/checkpoint',
+    parser.add_argument('--m_root',type=str, default='../video_decaption/checkpoint',
                         help='Model and Optim saved root')
-    parser.add_argument('--mask_model',type=str, default='mask_extraction/checkpoint/MaskExtractor.pth',
+    parser.add_argument('--mask_model',type=str, default='../mask_extraction/checkpoint/MaskExtractor3.pth',
                         help='Mask extraction')
-    parser.add_argument('--model_path',type=str, default='video_decaptioning/checkpoint/netG_origin.pth',
+    parser.add_argument('--model_path',type=str, default='../video_decaption/checkpoint/netG_deeplab.pth',
                         help='Model saved path')
     parser.add_argument('--n_frames', type=int, default=5,
                         help='N_frames in each video')
@@ -82,14 +87,14 @@ if __name__ == '__main__':
     print(net_G)
     if args.load:
         logging.info(f'Model loaded from {args.model_path}')
-        # 처음부터 학습
-        # net_G.load_state_dict(torch.load(args.model_path))
+        net_G.load_state_dict(torch.load(args.model_path))
     net_G=net_G.cuda()
     net_G = torch.nn.DataParallel(net_G, device_ids=[0])
     T=args.T
     n_frames=args.n_frames
     
-    mask_net=MaskUNet(3,1)
+    mask_net= DeepLab(1, in_channels=3, backbone='resnet50', pretrained=True, 
+                output_stride=16, freeze_bn=False, freeze_backbone=False)
     logging.info(f'Load mask extractor model from {args.mask_model}')
     mask_net.load_state_dict(torch.load(args.mask_model))
     mask_net=mask_net.cuda()
@@ -111,18 +116,23 @@ if __name__ == '__main__':
         criterion1 = nn.L1Loss()
         writer = SummaryWriter(comment=f'Video_Decaptioning')
         valid_mse,valid_n=[],0
+        # eval_net(net_G,mask_net,writer,T,0)
         for epoch in range(args.epochs):
             net_G.train()
+            
             with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{args.epochs}', unit='batch') as pbar:
                 for global_step, (inputs,targets) in enumerate(train_loader):
                     with torch.no_grad():
+                        
                         masks=mask_net(inputs.cuda())
                         masks = (masks > 0.5).float()
                     input_imgs=inputs.cuda()
                     input_masks=masks.cuda()
                     true_img=targets[:,T//2].cuda()
                     mask=input_masks[:,T//2]
-                    pred_img=net_G(input_imgs,input_masks)
+                   
+
+                    pred_img=net_G(input_imgs,input_masks) 
                     net_G.zero_grad()
 
                     loss_hole=criterion1(pred_img*mask,true_img*mask)/torch.mean(mask)
@@ -142,7 +152,7 @@ if __name__ == '__main__':
             valid_mse.append(mse)
             if mse==min(valid_mse):
                 valid_n=0
-                torch.save(net_G.module.state_dict(),os.path.join(args.m_root,'netG.pth'))
+                torch.save(net_G.module.state_dict(),os.path.join(args.m_root,'netG_deeplab_new.pth'))
                 logging.info(f'model {epoch+1} saved!')
             else:
                 valid_n+=1
@@ -151,7 +161,7 @@ if __name__ == '__main__':
                 break        
         writer.close()
     except KeyboardInterrupt:
-        torch.save(net_G.module.state_dict(),os.path.join(args.m_root,'netG.pth'))
+        torch.save(net_G.module.state_dict(),os.path.join(args.m_root,'netG_deeplab_new.pth'))
         logging.info('Saved interrupt')
         try:
             sys.exit(0)
