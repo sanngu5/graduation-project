@@ -4,6 +4,7 @@ import cv2
 import imageio
 import numpy as np
 import torch.nn.functional as F
+from model.deeplabV3 import DeepLab
 
 from PIL import Image
 from dataset.dataset import *
@@ -12,9 +13,9 @@ from tqdm import tqdm
 
 video_path='../../../dataset/test/imgs/X'
 n_frames=125
-mask_model_path='../mask_extraction/checkpoint/MaskExtractor.pth'
-model_G_path='../video_decaption/checkpoint/net_G.pth'
-T=11
+mask_model_path='../mask_extraction/checkpoint/MaskExtractor3.pth'
+model_G_path='./checkpoint/netG_deeplab_new.pth'
+T=7
 s=3
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -28,7 +29,8 @@ def createDirectory(directory):
 
 import time
 if __name__ == '__main__':
-    masknet = MaskUNet(n_channels=3, n_classes=1)
+    masknet= DeepLab(1, in_channels=3, backbone='resnet50', pretrained=True, 
+                output_stride=16, freeze_bn=False, freeze_backbone=False)
     masknet.load_state_dict(torch.load(mask_model_path))
     masknet=masknet.cuda()
     masknet=torch.nn.DataParallel(masknet,device_ids=[0])
@@ -40,7 +42,7 @@ if __name__ == '__main__':
     net_G =torch.nn.DataParallel(net_G, device_ids=[0])    
     net_G.eval()
 
-    for h in tqdm(range(50)):
+    for h in tqdm(range(500)):
     # for h in tqdm(range(os.listdir(video_path).__len__())):
         frames = np.empty((125, 128, 128, 3), dtype=np.float32)
         for i in range(125):
