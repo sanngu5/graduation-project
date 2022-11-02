@@ -1,5 +1,4 @@
-server/MaskExtractor.pth
-server/netG_origin.pth
-server/video/*
-server/X0/*
+server/output/*
+server/input/*
+server/checkpoints/*
 server/__pycache__
