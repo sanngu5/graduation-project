@@ -12,7 +12,8 @@ import torch.nn.functional as F
 import time
 import tqdm
 from dataset import *
-from network import MaskUNet, generator
+from network import generator
+from deeplabV3 import DeepLab
 from flask_cors import CORS
 from shutil import rmtree
 from moviepy.video.io.VideoFileClip import VideoFileClip
@@ -64,7 +65,7 @@ def upload():
     device = torch.device('cuda')
     start = time.time()
 
-    masknet = MaskUNet(n_channels=3, n_classes=1)
+    masknet = DeepLab(n_channels=3, num_classes=1)
     masknet.load_state_dict(torch.load(mask_model_path,map_location=device))
     #masknet=masknet
     masknet=torch.nn.DataParallel(masknet,device_ids=[0])
