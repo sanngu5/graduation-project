@@ -1,5 +1,7 @@
 import React from "react";
-import STATUS from "../constants/Status";
+import {Button, Link} from "@mui/material"
+import CircularProgress from '@mui/material/CircularProgress';
+
 
 const ActionButton = (props) => {
   const {
@@ -10,22 +12,24 @@ const ActionButton = (props) => {
     onFileDownload,
   } = props;
 
-  if (videoStatus === STATUS["UPLOADABLE"]) {
+  if (videoStatus === "LOADING") {
     return (
-      <button disabled={!selectedFile} onClick={onFileUpload}>
-        동영상 변환
-      </button>
+      <Button disabled={true} onClick={onFileChanged}>
+        <CircularProgress size={22} />
+      </Button>
     );
-  } else if (videoStatus === STATUS["LOADING"]) {
+  } else if (videoStatus === "DOWNLOADABLE") {
     return (
-      <button disabled={true} onClick={onFileChanged}>
-        변환중
-      </button>
+      <Link href="http://127.0.0.1:5000/download" underline="none" style={{fontSize: 14, paddingRight: 13}}>
+        미리보기
+      </Link>
     );
-  } else if (videoStatus === STATUS["DOWNLOADABLE"]) {
-    return <a href="http://127.0.0.1:5000/download">다운로드</a>;
   } else {
-    return <></>;
+    return (
+      <Button disabled={!selectedFile} onClick={onFileUpload}>
+        동영상 변환
+      </Button>
+    );
   }
 };
 
