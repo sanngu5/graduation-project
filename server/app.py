@@ -13,6 +13,7 @@ import time
 import tqdm
 from dataset import *
 from network import generator
+from network import MaskUNet
 from deeplabV3 import DeepLab
 from flask_cors import CORS
 from shutil import rmtree
@@ -65,7 +66,8 @@ def upload():
     device = torch.device('cuda')
     start = time.time()
 
-    masknet = DeepLab(n_channels=3, num_classes=1)
+    # masknet = DeepLab(n_channels=3, num_classes=1)
+    masknet = MaskUNet(n_channels=3, n_classes=1)
     masknet.load_state_dict(torch.load(mask_model_path,map_location=device))
     #masknet=masknet
     masknet=torch.nn.DataParallel(masknet,device_ids=[0])
@@ -130,9 +132,11 @@ def upload():
         chunks.append(VideoFileClip(chunk_path))
     final = concatenate_videoclips(chunks)
     final.write_videofile('./output/video.mp4')
+    
 
     print("time :", time.time() - start)
     rmtree(frames_path)
+    rmtree(chunks_path)
     return Response(response=video.filename, status=200, mimetype='text/plain')
 
 # 디캡션 비디오 전송
