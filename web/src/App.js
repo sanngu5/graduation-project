@@ -36,13 +36,20 @@ function App() {
       url: 'http://127.0.0.1:5000/upload',
       data: formData,
       headers: {'Content-Type': 'multipart/form-data'}
-    });
-
-    // res.
-    setVideoStatus("DOWNLOADABLE");
-    console.log(res);
-    setResult(res.data);
-    setSelectedFile(null);
+    })
+    .then(function (res){
+      // res.
+      setVideoStatus("DOWNLOADABLE");
+      console.log(res);
+      setResult(res.data);
+      setSelectedFile(null);
+    })
+    .catch(function (error){
+      setVideoStatus(null)
+      setResult(null)
+      setSelectedFile(null)
+      alert('변환에 실패했습니다. 다시 한 번 시도해주세요.')
+    })
   }
 
   //파일변환 완료에 대한 임시 버튼
