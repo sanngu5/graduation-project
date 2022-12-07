@@ -2,12 +2,15 @@ import './App.css';
 import React, { useState } from 'react';
 import FileData from './components/FileData';
 import ActionButton from './components/ActionButton';
-import {Button} from '@mui/material'
+import {Button, Switch, TextField} from '@mui/material'
 
 const axios = require('axios').default;
 axios.defaults.withCredentials = true;
 
 function App() {
+
+  const [youtube, setYouTube] = useState(null);
+  const [link, setLink] = useState(null);
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [videoStatus, setVideoStatus] = useState(null);
@@ -63,6 +66,10 @@ function App() {
     setSelectedFile(null);
   }
 
+  const onYoutubeChange = () => {
+    setYouTube(!youtube)
+  }
+
   return (
     <div 
       className='container' 
@@ -88,27 +95,44 @@ function App() {
         "borderColor": "#E2E2E2",
         "padding": 5
       }}>
-        <Button
-          variant="contained"
-          component="label"
-        >
-          파일 선택
-          <input
-            type="file"
-            hidden
-            onChange = {onFileChange}
+        {/* {youtube
+        ?
+          <>
+            <TextField 
+              id="youtubelink"
+              label="유튜브 링크를 붙여넣으세요"
+              variant="standard"
+              style={{"height": 50, "minWidth": 400, "margin":5, "color": "gray"}}
+            />
+            <ActionButton></ActionButton>
+          </>
+        :<> */}
+          <Button
+            variant="contained"
+            component="label"
+          >
+            파일 선택
+            <input
+              type="file"
+              hidden
+              onChange = {onFileChange}
+            />
+          </Button>
+          <div id="file_name" style={{"minWidth": 300, "margin":5, "color": "gray"}}>
+            {selectedFile ? selectedFile.name : "파일을 선택해주세요"}
+          </div>
+          <ActionButton 
+            selectedFile={selectedFile}
+            videoStatus={videoStatus}
+            onFileUpload={onFileUpload}
+            onFileChanged={onFileChanged}
+            onFileDownload={onFileDownload}
           />
-        </Button>
-        <div id="file_name" style={{"minWidth": 300, "margin":5, "color": "gray"}}>
-          {selectedFile ? selectedFile.name : "파일을 선택해주세요"}
-        </div>
-        <ActionButton 
-          selectedFile={selectedFile}
-          videoStatus={videoStatus}
-          onFileUpload={onFileUpload}
-          onFileChanged={onFileChanged}
-          onFileDownload={onFileDownload}
-        />
+        {/* </>}
+        <Switch
+          checked={youtube}
+          onChange={onYoutubeChange}
+        /> */}
       </div>
     </div>
   )
