@@ -1,24 +1,3 @@
-# 동영상 속 캡션 제거 및 복원
-
-## 팀명단
-- 이종우
-- 박성진
-- 윤진성
-
-## 1학기 결과물
-
-### 요구사항 분석서
-https://docs.google.com/document/d/1ctgq-h6bQqH5MkAv5bFROycGwb25swo49zGy9lU6q5c/edit
-
-### 시스템 설계서
-https://docs.google.com/document/d/14tE19qj9MCoHoC1SMsLbqWDbHi_3VDtoxljbQDJ3xuM/edit
-
-### 프로토타입
-https://youtu.be/JF13KG4Gyi8
-
-### 기말 보고서
-https://docs.google.com/document/d/1qcoYHLGHmuc_UCf8TaPu4rp1sqGg9izVu9atNjeriUI/edit
-
 ## AI 실행환경
 1. conda 환경 설정
 ```
@@ -41,6 +20,41 @@ pip install pyiqa
 pip install pillow
 pip install tqdm
 pip install numpy
+```
+
+## data_crawler.ipynb 실행환경
+moviepy의 caption.py의 xml_caption_to_srt함수를 다음과 같이 수정 후 사용
+
+```
+def xml_caption_to_srt(self, xml_captions: str) -> str:
+    """Convert xml caption tracks to "SubRip Subtitle (srt)".
+
+    :param str xml_captions:
+        XML formatted caption tracks.
+    """
+    segments = []
+    root = ElementTree.fromstring(xml_captions)
+    for i, child in enumerate(list(root.findall('body/p'))):
+        text = "".join(child.itertext()).strip()
+        if not text:
+            continue
+        caption = unescape(text.replace("\n", " ").replace("  ", " "),)
+        try:
+            duration = float(child.attrib["d"])
+        except KeyError:
+            duration = 0.0
+        start = float(child.attrib["t"])
+        end = start + duration
+        start, end = start/1000, end/1000
+        sequence_number = i + 1  # convert from 0-indexed to 1.
+        line = "{seq}\n{start} --> {end}\n{text}\n".format(
+            seq=sequence_number,
+            start=self.float_to_srt_time_format(start),
+            end=self.float_to_srt_time_format(end),
+            text=caption,
+        )
+        segments.append(line)
+    return "\n".join(segments).strip()
 ```
 
 ## Citation
